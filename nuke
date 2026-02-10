@@ -1,0 +1,113 @@
+--[[ Anouar777x - Spectate Players GUI - Red & Black Theme ]]
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/lyrarepositorio-afk/Kkksksj/refs/heads/main/Main.txt"))()
+
+local Window = Library:MakeWindow({
+    Title = "Anouar777x | Spectate Players",
+    SubTitle = "Spectate Only - Red Black Theme",
+    LoadText = "Loading Anouar777x...",
+    Flags = "Anouar777x"
+})
+
+Window:AddMinimizeButton({
+    Button = { 
+        Image = "rbxassetid://117731945306", 
+        BackgroundTransparency = 0,
+        BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    },
+    Corner = { CornerRadius = UDim.new(35, 1) },
+})
+
+local SpectateTab = Window:MakeTab({ 
+    Title = "Spectate Players", 
+    Icon = "rbxassetid://131153193945220" 
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local selectedPlayerName = nil
+
+local function getPlayerList()
+    local players = Players:GetPlayers()
+    local playerNames = {}
+    for _, player in ipairs(players) do
+        if player ~= LocalPlayer then
+            table.insert(playerNames, player.Name)
+        end
+    end
+    return playerNames
+end
+
+local playerDropdown = SpectateTab:AddDropdown({
+    Name = "Select Player",
+    Options = getPlayerList(),
+    Default = "",
+    Callback = function(value)
+        selectedPlayerName = value
+        print("Selected player: " .. tostring(value))
+    end
+})
+
+SpectateTab:AddButton({
+    Name = "Refresh Player List",
+    Callback = function()
+        local currentPlayers = Players:GetPlayers()
+        local newList = {}
+        if playerDropdown and #currentPlayers > 0 then
+            for _, player in ipairs(currentPlayers) do
+                if player.Name ~= LocalPlayer.Name then
+                    table.insert(newList, player.Name)
+                end
+            end
+            playerDropdown:Set(newList)
+            print("Player list refreshed")
+            if selectedPlayerName and not Players:FindFirstChild(selectedPlayerName) then
+                selectedPlayerName = nil
+                playerDropdown:SetValue("")
+                print("Selection reset - player no longer in game")
+            end
+        end
+    end
+})
+
+SpectateTab:AddToggle({
+    Name = "Spectate Selected Player",
+    Default = false,
+    Callback = function(enabled)
+        local Camera = workspace.CurrentCamera
+
+        local function updateCamera()
+            if enabled then
+                local target = Players:FindFirstChild(selectedPlayerName)
+                if target and target.Character then
+                    local humanoid = target.Character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        Camera.CameraSubject = humanoid
+                    end
+                end
+            else
+                if LocalPlayer.Character then
+                    local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        Camera.CameraSubject = humanoid
+                    end
+                end
+            end
+        end
+
+        if enabled then
+            if not getgenv().SpectateConnection then
+                getgenv().SpectateConnection = RunService.Heartbeat:Connect(updateCamera)
+            end
+        else
+            if getgenv().SpectateConnection then
+                getgenv().SpectateConnection:Disconnect()
+                getgenv().SpectateConnection = nil
+            end
+            updateCamera()
+        end
+    end
+})
+
+SpectateTab:AddLabel("Theme: Red & Black - Made by Anouar777x")
